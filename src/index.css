@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-cream text-ink antialiased;
+    background-image:
+      radial-gradient(1100px 500px at 8% -8%, rgba(205, 180, 246, 0.25), transparent 60%),
+      radial-gradient(900px 500px at 102% 0%, rgba(188, 220, 255, 0.22), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-3xl bg-white/80 backdrop-blur-sm shadow-card border border-white/60;
+  }
+
+  .input {
+    @apply w-full rounded-2xl border border-lilac/70 bg-white/90 px-4 py-2.5 text-sm text-ink
+           placeholder:text-muted/70 outline-none transition
+           focus:border-lavender focus:ring-4 focus:ring-lavender/20;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold
+           transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100;
+  }
+
+  .btn-primary {
+    @apply btn bg-lavender text-white shadow-soft hover:brightness-105;
+  }
+
+  .btn-ghost {
+    @apply btn bg-white/70 text-ink hover:bg-white border border-lilac/60;
+  }
+}
+
+/* Pretty, slim scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(205, 180, 246, 0.5);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(205, 180, 246, 0.8);
+  background-clip: padding-box;
+}
