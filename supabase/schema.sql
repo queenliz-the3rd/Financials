@@ -37,6 +37,18 @@ create table if not exists public.goals (
   created_at     timestamptz not null default now()
 );
 
+-- Settings (one row per user) — controls the weekly insight email -----------
+create table if not exists public.settings (
+  user_id        uuid primary key references auth.users (id) on delete cascade,
+  email_enabled  boolean not null default false,
+  email_to       text not null default '',
+  timezone       text not null default 'America/Denver',
+  send_dow       int not null default 0 check (send_dow between 0 and 6), -- 0 = Sunday
+  send_hour      int not null default 18 check (send_hour between 0 and 23),
+  last_sent_at   timestamptz,
+  updated_at     timestamptz not null default now()
+);
+
 -- Indexes for faster per-user queries
 create index if not exists transactions_user_date_idx on public.transactions (user_id, date desc);
 create index if not exists budgets_user_idx on public.budgets (user_id);
@@ -46,6 +58,7 @@ create index if not exists goals_user_idx on public.goals (user_id);
 alter table public.transactions enable row level security;
 alter table public.budgets enable row level security;
 alter table public.goals enable row level security;
+alter table public.settings enable row level security;
 
 -- Helper to keep policies DRY-ish: one policy per table for all actions.
 create policy "own transactions" on public.transactions
@@ -55,4 +68,7 @@ create policy "own budgets" on public.budgets
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "own goals" on public.goals
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "own settings" on public.settings
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

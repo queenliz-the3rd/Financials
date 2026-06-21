@@ -1,12 +1,13 @@
-import { LayoutDashboard, ArrowLeftRight, PiggyBank, Target } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, PiggyBank, Target, Settings } from 'lucide-react'
 
-export type Page = 'dashboard' | 'transactions' | 'budgets' | 'goals'
+export type Page = 'dashboard' | 'transactions' | 'budgets' | 'goals' | 'settings'
 
 const ITEMS: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
   { id: 'transactions', label: 'Activity', icon: ArrowLeftRight },
   { id: 'budgets', label: 'Budgets', icon: PiggyBank },
   { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
 export function Sidebar({

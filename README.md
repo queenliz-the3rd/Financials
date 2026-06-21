@@ -15,6 +15,9 @@ savings goals. Built with React, TypeScript, Vite, Tailwind, and Recharts.
   (and a friendly nudge when you go over).
 - **Savings goals** — set targets, add money (or withdraw), and watch the
   progress fill toward little celebrations 🎉.
+- **Weekly insight email** — an optional friendly recap delivered to your inbox
+  once a week (spending vs. last week, top category, budget alerts, savings +
+  a tip). Preview it live in **Settings**.
 - **Responsive** — sidebar on desktop, bottom tab bar on mobile.
 - **Pastel + minimal** — soft cards, rounded corners, calming colors.
 
@@ -50,16 +53,47 @@ laptop with secure per-user accounts:
 Penny will automatically switch to cloud mode and show a passwordless
 magic-link sign-in. No keys configured = it quietly stays in local mode.
 
+## 📬 Optional: weekly insight email
+
+Once cloud sync is on, you can get an automatic weekly recap by email. This
+needs a (free) email sender and a scheduled job — both set up once:
+
+1. **Get a Resend API key** — sign up at [resend.com](https://resend.com) and
+   create an API key. To start, you can send from `onboarding@resend.dev`; to
+   send from your own address, verify a domain in Resend.
+
+2. **Deploy the edge function** (with the [Supabase CLI](https://supabase.com/docs/guides/cli)):
+
+   ```bash
+   supabase link --project-ref <your-project-ref>
+   supabase secrets set RESEND_API_KEY=re_xxx "EMAIL_FROM=Penny <onboarding@resend.dev>"
+   supabase functions deploy weekly-insight
+   ```
+
+3. **Schedule it** — open `supabase/cron.sql`, fill in your project ref and
+   service-role key, and run it in the Supabase SQL Editor. It calls the
+   function hourly; the function decides who is "due" based on each person's
+   timezone, day, and hour, so one schedule covers all timezones.
+
+4. **Turn it on in the app** — go to **Settings → Weekly insight email**,
+   toggle it on, confirm your address/day/time, **Save**, and hit
+   **Send me a test now** to confirm it works. 🎉
+
+Don't want email? Just leave the toggle off — nothing sends.
+
 ## 🗂️ Project structure
 
 ```
 src/
   components/   reusable UI (nav, modal, forms, cards, charts)
   context/      DataContext — state + derived monthly stats
-  lib/          storage adapter (cloud/local), supabase client, types, helpers
-  pages/        Dashboard · Transactions · Budgets · Goals
+  lib/          storage adapter (cloud/local), supabase client, insight engine, helpers
+  pages/        Dashboard · Transactions · Budgets · Goals · Settings
 supabase/
-  schema.sql    tables + row-level security
+  schema.sql              tables + row-level security
+  cron.sql                hourly schedule for the weekly email
+  functions/
+    weekly-insight/       edge function: builds the insight + sends via Resend
 ```
 
 ## 🔒 A note on privacy

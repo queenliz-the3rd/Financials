@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Budgets from './pages/Budgets'
 import Goals from './pages/Goals'
+import SettingsPage from './pages/Settings'
 import { DataProvider } from './context/DataContext'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 
@@ -64,6 +65,7 @@ export default function App() {
             {page === 'transactions' && <Transactions />}
             {page === 'budgets' && <Budgets />}
             {page === 'goals' && <Goals />}
+            {page === 'settings' && <SettingsPage />}
           </div>
         </main>
 

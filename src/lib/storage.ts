@@ -1,12 +1,14 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { uid } from './format'
-import type {
-  Transaction,
-  Budget,
-  Goal,
-  NewTransaction,
-  NewBudget,
-  NewGoal,
+import {
+  DEFAULT_SETTINGS,
+  type Transaction,
+  type Budget,
+  type Goal,
+  type NewTransaction,
+  type NewBudget,
+  type NewGoal,
+  type Settings,
 } from './types'
 
 // A small storage abstraction. Penny uses Supabase when it's configured,
@@ -34,11 +36,15 @@ export interface Store {
   addGoal(g: NewGoal): Promise<Goal>
   updateGoal(id: string, patch: Partial<NewGoal>): Promise<void>
   deleteGoal(id: string): Promise<void>
+
+  loadSettings(): Promise<Settings>
+  saveSettings(s: Settings): Promise<void>
 }
 
 /* ------------------------------- Local store ------------------------------- */
 
 const LS_KEY = 'penny.data.v1'
+const LS_SETTINGS_KEY = 'penny.settings.v1'
 
 function readLocal(): DataBundle {
   try {
@@ -121,6 +127,20 @@ class LocalStore implements Store {
     const data = readLocal()
     data.goals = data.goals.filter((g) => g.id !== id)
     writeLocal(data)
+  }
+
+  async loadSettings(): Promise<Settings> {
+    try {
+      const raw = localStorage.getItem(LS_SETTINGS_KEY)
+      if (raw) return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Settings) }
+    } catch {
+      /* ignore */
+    }
+    return DEFAULT_SETTINGS
+  }
+
+  async saveSettings(s: Settings): Promise<void> {
+    localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(s))
   }
 }
 
@@ -212,6 +232,32 @@ class CloudStore implements Store {
 
   async deleteGoal(id: string) {
     const { error } = await supabase!.from('goals').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async loadSettings(): Promise<Settings> {
+    const user_id = await this.userId()
+    const { data, error } = await supabase!
+      .from('settings')
+      .select('*')
+      .eq('user_id', user_id)
+      .maybeSingle()
+    if (error) throw error
+    if (!data) return DEFAULT_SETTINGS
+    return {
+      email_enabled: data.email_enabled,
+      email_to: data.email_to ?? '',
+      timezone: data.timezone ?? DEFAULT_SETTINGS.timezone,
+      send_dow: data.send_dow ?? DEFAULT_SETTINGS.send_dow,
+      send_hour: data.send_hour ?? DEFAULT_SETTINGS.send_hour,
+    }
+  }
+
+  async saveSettings(s: Settings): Promise<void> {
+    const user_id = await this.userId()
+    const { error } = await supabase!
+      .from('settings')
+      .upsert({ user_id, ...s }, { onConflict: 'user_id' })
     if (error) throw error
   }
 }
