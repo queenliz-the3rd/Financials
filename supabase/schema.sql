@@ -28,14 +28,24 @@ create table if not exists public.budgets (
 
 -- Goals -------------------------------------------------------------------
 create table if not exists public.goals (
-  id             uuid primary key default gen_random_uuid(),
-  user_id        uuid not null references auth.users (id) on delete cascade,
-  name           text not null,
-  target_amount  numeric(12, 2) not null check (target_amount >= 0),
-  saved_amount   numeric(12, 2) not null default 0,
-  emoji          text not null default '🎯',
-  created_at     timestamptz not null default now()
+  id                    uuid primary key default gen_random_uuid(),
+  user_id               uuid not null references auth.users (id) on delete cascade,
+  name                  text not null,
+  target_amount         numeric(12, 2) not null check (target_amount >= 0),
+  saved_amount          numeric(12, 2) not null default 0,
+  emoji                 text not null default '🎯',
+  deadline              date,                       -- null = no deadline
+  monthly_target        numeric(12, 2),             -- desired contribution per month
+  contributed_this_month numeric(12, 2) not null default 0,
+  contrib_month         text not null default '',   -- yyyy-mm
+  created_at            timestamptz not null default now()
 );
+
+-- If the goals table already exists from an earlier version, add the new columns:
+alter table public.goals add column if not exists deadline date;
+alter table public.goals add column if not exists monthly_target numeric(12, 2);
+alter table public.goals add column if not exists contributed_this_month numeric(12, 2) not null default 0;
+alter table public.goals add column if not exists contrib_month text not null default '';
 
 -- Profiles + PIN (one row per user) ------------------------------------------
 -- The 4-digit PIN is stored only as a bcrypt hash and verified server-side by

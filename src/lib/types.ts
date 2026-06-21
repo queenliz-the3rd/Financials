@@ -23,6 +23,10 @@ export interface Goal {
   target_amount: number
   saved_amount: number
   emoji: string
+  deadline?: string | null // yyyy-mm-dd, or null for no deadline
+  monthly_target?: number | null // desired contribution per month
+  contributed_this_month?: number // amount added during contrib_month
+  contrib_month?: string // yyyy-mm that contributed_this_month refers to
   created_at?: string
 }
 

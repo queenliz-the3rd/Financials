@@ -291,8 +291,15 @@ function seedData(): DataBundle {
       { id: uid(), category: 'Fun', limit_amount: 120 },
     ],
     goals: [
-      { id: uid(), name: 'Emergency fund', target_amount: 5000, saved_amount: 1800, emoji: '🛟' },
-      { id: uid(), name: 'Japan trip', target_amount: 3000, saved_amount: 950, emoji: '🗾' },
+      {
+        id: uid(), name: 'Emergency fund', target_amount: 5000, saved_amount: 1800, emoji: '🛟',
+        deadline: null, monthly_target: 300, contributed_this_month: 150, contrib_month: today.toISOString().slice(0, 7),
+      },
+      {
+        id: uid(), name: 'Japan trip', target_amount: 3000, saved_amount: 950, emoji: '🗾',
+        deadline: new Date(today.getFullYear() + 1, today.getMonth(), 1).toISOString().slice(0, 10),
+        monthly_target: 200, contributed_this_month: 0, contrib_month: '',
+      },
     ],
   }
   return data

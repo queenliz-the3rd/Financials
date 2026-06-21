@@ -13,8 +13,14 @@ savings goals. Built with React, TypeScript, Vite, Tailwind, and Recharts.
 - **Activity** — add, edit, search, and filter income & expenses, grouped by day.
 - **Budgets** — set a gentle monthly limit per category with calm progress bars
   (and a friendly nudge when you go over).
-- **Savings goals** — set targets, add money (or withdraw), and watch the
-  progress fill toward little celebrations 🎉.
+- **Income planner** — built for irregular income (part-time, tips): plan any
+  amount (a single paycheck or a whole month) against your budgets and goals and
+  see exactly what's covered, what's free, or what's short. Uses your real
+  logged income (this month + a rolling 3-month average).
+- **Savings goals** — set targets, add money (or withdraw), watch progress fill
+  toward little celebrations 🎉. Each goal can have an **optional deadline**
+  (with the required monthly amount + on/off-track status) and a **monthly
+  contribution goal** tracked month to month.
 - **Weekly insight email** — an optional friendly recap delivered to your inbox
   once a week (spending vs. last week, top category, budget alerts, savings +
   a tip). Preview it live in **Settings**.

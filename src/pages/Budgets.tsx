@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import Modal from '../components/Modal'
 import ProgressBar from '../components/ProgressBar'
 import EmptyState from '../components/EmptyState'
+import IncomePlanner from '../components/IncomePlanner'
 import { useData, useMonthStats } from '../context/DataContext'
 import { EXPENSE_CATEGORIES, categoryMeta } from '../lib/categories'
 import { formatMoney, monthLabel, currentMonthKey, clamp } from '../lib/format'
@@ -47,6 +48,8 @@ export default function Budgets() {
           <Plus size={18} /> New
         </button>
       </header>
+
+      <IncomePlanner />
 
       {budgets.length > 0 && (
         <div className="card p-5">

@@ -46,6 +46,29 @@ export function clamp(n: number, min = 0, max = 1): number {
   return Math.max(min, Math.min(max, n))
 }
 
+export function formatFullDate(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// Fractional months from now until an ISO date (negative if in the past).
+export function monthsUntil(iso: string, now: Date = new Date()): number {
+  const d = new Date(iso + 'T00:00:00')
+  return (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)
+}
+
+// Human countdown like "in 3 months" / "in 2 weeks" / "today".
+export function countdown(iso: string, now: Date = new Date()): string {
+  const days = Math.round(
+    (new Date(iso + 'T00:00:00').getTime() - now.getTime()) / 86_400_000,
+  )
+  if (days < 0) return `${Math.abs(days)}d ago`
+  if (days === 0) return 'today'
+  if (days < 14) return `in ${days}d`
+  if (days < 60) return `in ${Math.round(days / 7)}w`
+  return `in ${Math.round(days / 30.4375)}mo`
+}
+
 export function uid(): string {
   return (
     Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
