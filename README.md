@@ -18,6 +18,9 @@ savings goals. Built with React, TypeScript, Vite, Tailwind, and Recharts.
 - **Weekly insight email** — an optional friendly recap delivered to your inbox
   once a week (spending vs. last week, top category, budget alerts, savings +
   a tip). Preview it live in **Settings**.
+- **Accounts + PIN lock** — username/password sign-in with a "stay logged in"
+  option, plus a Venmo-style **4-digit PIN required every time the app opens**
+  (bcrypt-hashed, verified server-side, locks out after 5 wrong tries).
 - **Responsive** — sidebar on desktop, bottom tab bar on mobile.
 - **Pastel + minimal** — soft cards, rounded corners, calming colors.
 
@@ -50,8 +53,22 @@ laptop with secure per-user accounts:
    (Project Settings → API).
 4. Restart `npm run dev`.
 
-Penny will automatically switch to cloud mode and show a passwordless
-magic-link sign-in. No keys configured = it quietly stays in local mode.
+Penny will automatically switch to cloud mode. No keys configured = it quietly
+stays in local mode.
+
+### Accounts & the PIN lock
+
+- People sign up with a **username + password** (the username is mapped to an
+  internal email behind the scenes, so no email is required to sign up).
+- **Important:** in your Supabase dashboard go to **Authentication → Providers →
+  Email** and turn **off** "Confirm email" — otherwise new username/password
+  sign-ups can't log in immediately.
+- On first login each person sets a **4-digit PIN**. It's stored only as a
+  bcrypt hash (`pgcrypto`) and checked by the `verify_pin` SQL function, which
+  locks the account after 5 wrong attempts. The PIN is asked for every time the
+  app opens. "Forgot PIN?" signs out; logging back in lets them set a new one.
+- In local/demo mode the same flow works with accounts and PIN hashes stored in
+  the browser, so you can try it on the live site without any backend.
 
 ## 📬 Optional: weekly insight email
 

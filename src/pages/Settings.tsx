@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext'
 import { store } from '../lib/storage'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { buildInsight } from '../lib/insight'
+import { isSyntheticEmail } from '../lib/auth'
 import { DEFAULT_SETTINGS, type Settings as SettingsT } from '../lib/types'
 
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -37,7 +38,10 @@ export default function SettingsPage() {
       // Prefill the email with the signed-in account if we don't have one yet
       if (!s.email_to && isSupabaseConfigured && supabase) {
         const { data } = await supabase.auth.getUser()
-        if (data.user?.email) s.email_to = data.user.email
+        // Don't prefill the internal username@... address — only a real email
+        if (data.user?.email && !isSyntheticEmail(data.user.email)) {
+          s.email_to = data.user.email
+        }
       }
       setSettings(s)
       setLoaded(true)
