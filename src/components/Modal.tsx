@@ -41,7 +41,7 @@ export default function Modal({ open, title, onClose, children }: ModalProps) {
             <X size={18} />
           </button>
         </div>
-        <div className="overflow-y-auto overscroll-contain px-6 pb-6">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6">{children}</div>
       </div>
     </div>
   )
