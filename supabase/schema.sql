@@ -116,15 +116,17 @@ revoke select (pin_hash) on public.profiles from authenticated, anon;
 revoke update (pin_hash, pin_attempts) on public.profiles from authenticated, anon;
 
 -- PIN functions ----------------------------------------------------------------
-create extension if not exists pgcrypto;
+-- pgcrypto lives in the "extensions" schema on Supabase, so the functions below
+-- include it in their search_path to find crypt() and gen_salt().
+create extension if not exists pgcrypto with schema extensions;
 
 create or replace function public.has_pin()
-returns boolean language sql security definer set search_path = public as $$
+returns boolean language sql security definer set search_path = public, extensions as $$
   select coalesce((select pin_hash is not null from profiles where user_id = auth.uid()), false);
 $$;
 
 create or replace function public.set_pin(new_pin text)
-returns void language plpgsql security definer set search_path = public as $$
+returns void language plpgsql security definer set search_path = public, extensions as $$
 begin
   if new_pin !~ '^[0-9]{4}$' then
     raise exception 'PIN must be exactly 4 digits';
@@ -138,7 +140,7 @@ $$;
 
 -- Returns 'ok' | 'wrong' | 'locked' | 'no_pin'. Locks after 5 failed attempts.
 create or replace function public.verify_pin(attempt text)
-returns text language plpgsql security definer set search_path = public as $$
+returns text language plpgsql security definer set search_path = public, extensions as $$
 declare rec record;
 begin
   select pin_hash, pin_attempts into rec from profiles where user_id = auth.uid();
@@ -157,7 +159,7 @@ end;
 $$;
 
 create or replace function public.reset_pin_attempts()
-returns void language sql security definer set search_path = public as $$
+returns void language sql security definer set search_path = public, extensions as $$
   update profiles set pin_attempts = 0 where user_id = auth.uid();
 $$;
 

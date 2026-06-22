@@ -251,18 +251,18 @@ class CloudAuth implements AuthAdapter {
 
   async hasPin(): Promise<boolean> {
     const { data, error } = await supabase!.rpc('has_pin')
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return Boolean(data)
   }
 
   async setPin(pin: string): Promise<void> {
     const { error } = await supabase!.rpc('set_pin', { new_pin: pin })
-    if (error) throw error
+    if (error) throw new Error(error.message)
   }
 
   async verifyPin(pin: string): Promise<VerifyResult> {
     const { data, error } = await supabase!.rpc('verify_pin', { attempt: pin })
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data as VerifyResult
   }
 }
