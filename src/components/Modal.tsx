@@ -28,10 +28,10 @@ export default function Modal({ open, title, onClose, children }: ModalProps) {
       onClick={onClose}
     >
       <div
-        className="card w-full max-w-md animate-pop rounded-b-none rounded-t-3xl p-6 sm:rounded-3xl"
+        className="card flex max-h-[90dvh] w-full max-w-md animate-pop flex-col overflow-hidden rounded-b-none rounded-t-3xl sm:max-h-[85dvh] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between px-6 pt-6 pb-4">
           <h2 className="text-lg font-bold">{title}</h2>
           <button
             onClick={onClose}
@@ -41,7 +41,7 @@ export default function Modal({ open, title, onClose, children }: ModalProps) {
             <X size={18} />
           </button>
         </div>
-        {children}
+        <div className="overflow-y-auto overscroll-contain px-6 pb-6">{children}</div>
       </div>
     </div>
   )
