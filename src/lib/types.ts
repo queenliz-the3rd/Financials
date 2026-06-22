@@ -24,9 +24,11 @@ export interface Goal {
   saved_amount: number
   emoji: string
   deadline?: string | null // yyyy-mm-dd, or null for no deadline
-  monthly_target?: number | null // desired contribution per month
-  contributed_this_month?: number // amount added during contrib_month
-  contrib_month?: string // yyyy-mm that contributed_this_month refers to
+  monthly_target?: number | null // desired contribution per month (canonical)
+  auto_contribution?: boolean // if true, monthly_target is derived from the deadline
+  contributed_this_month?: number // amount added during the current period
+  contrib_month?: string // legacy yyyy-mm key (kept for back-compat)
+  contrib_period?: string // period-start key the contribution total refers to
   created_at?: string
 }
 
@@ -40,6 +42,9 @@ export interface Settings {
   timezone: string
   send_dow: number // 0 = Sunday .. 6 = Saturday
   send_hour: number // 0-23, local to timezone
+  budget_period: 'monthly' | 'biweekly'
+  biweekly_style: 'every14' | 'semimonthly'
+  cycle_start: string // yyyy-mm-dd anchor for the "every 14 days" style
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -48,4 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   timezone: 'America/Denver',
   send_dow: 0,
   send_hour: 18,
+  budget_period: 'monthly',
+  biweekly_style: 'semimonthly',
+  cycle_start: new Date().toISOString().slice(0, 10),
 }

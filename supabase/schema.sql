@@ -46,6 +46,8 @@ alter table public.goals add column if not exists deadline date;
 alter table public.goals add column if not exists monthly_target numeric(12, 2);
 alter table public.goals add column if not exists contributed_this_month numeric(12, 2) not null default 0;
 alter table public.goals add column if not exists contrib_month text not null default '';
+alter table public.goals add column if not exists contrib_period text not null default '';
+alter table public.goals add column if not exists auto_contribution boolean not null default false;
 
 -- Profiles + PIN (one row per user) ------------------------------------------
 -- The 4-digit PIN is stored only as a bcrypt hash and verified server-side by
@@ -66,9 +68,17 @@ create table if not exists public.settings (
   timezone       text not null default 'America/Denver',
   send_dow       int not null default 0 check (send_dow between 0 and 6), -- 0 = Sunday
   send_hour      int not null default 18 check (send_hour between 0 and 23),
+  budget_period  text not null default 'monthly',     -- 'monthly' | 'biweekly'
+  biweekly_style text not null default 'semimonthly', -- 'semimonthly' | 'every14'
+  cycle_start    date,                                -- anchor for the every-14-days style
   last_sent_at   timestamptz,
   updated_at     timestamptz not null default now()
 );
+
+-- If the settings table already exists, add the period columns:
+alter table public.settings add column if not exists budget_period text not null default 'monthly';
+alter table public.settings add column if not exists biweekly_style text not null default 'semimonthly';
+alter table public.settings add column if not exists cycle_start date;
 
 -- Indexes for faster per-user queries
 create index if not exists transactions_user_date_idx on public.transactions (user_id, date desc);

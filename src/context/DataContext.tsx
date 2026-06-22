@@ -9,6 +9,8 @@ import {
 } from 'react'
 import { store } from '../lib/storage'
 import { currentMonthKey, monthKey } from '../lib/format'
+import { DEFAULT_SETTINGS } from '../lib/types'
+import { type PeriodConfig, currentPeriodKey } from '../lib/period'
 import type {
   Budget,
   Goal,
@@ -16,6 +18,7 @@ import type {
   NewGoal,
   NewTransaction,
   Transaction,
+  Settings,
 } from '../lib/types'
 
 interface DataState {
@@ -24,6 +27,8 @@ interface DataState {
   transactions: Transaction[]
   budgets: Budget[]
   goals: Goal[]
+  settings: Settings
+  periodCfg: PeriodConfig
 
   addTransaction: (t: NewTransaction) => Promise<void>
   updateTransaction: (id: string, patch: Partial<NewTransaction>) => Promise<void>
@@ -36,6 +41,9 @@ interface DataState {
   addGoal: (g: NewGoal) => Promise<void>
   updateGoal: (id: string, patch: Partial<NewGoal>) => Promise<void>
   deleteGoal: (id: string) => Promise<void>
+  contributeToGoal: (id: string, amount: number) => Promise<void>
+
+  updateSettings: (patch: Partial<Settings>) => Promise<void>
 
   refresh: () => Promise<void>
 }
@@ -47,12 +55,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
 
   const refresh = useCallback(async () => {
-    const data = await store.loadAll()
+    const [data, s] = await Promise.all([store.loadAll(), store.loadSettings()])
     setTransactions(data.transactions)
     setBudgets(data.budgets)
     setGoals(data.goals)
+    setSettings(s)
   }, [])
 
   useEffect(() => {
@@ -77,6 +87,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       transactions,
       budgets,
       goals,
+      settings,
+      periodCfg: {
+        period: settings.budget_period,
+        biweeklyStyle: settings.biweekly_style,
+        cycleStart: settings.cycle_start,
+      },
 
       async addTransaction(t) {
         const row = await store.addTransaction(t)
@@ -122,10 +138,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await store.deleteGoal(id)
         setGoals((prev) => prev.filter((g) => g.id !== id))
       },
+      async contributeToGoal(id, amount) {
+        const goal = goals.find((g) => g.id === id)
+        if (!goal) return
+        const periodKey = currentPeriodKey({
+          period: settings.budget_period,
+          biweeklyStyle: settings.biweekly_style,
+          cycleStart: settings.cycle_start,
+        })
+        const base = goal.contrib_period === periodKey ? goal.contributed_this_month ?? 0 : 0
+        const patch = {
+          saved_amount: Math.max(0, Math.round((goal.saved_amount + amount) * 100) / 100),
+          contributed_this_month: Math.max(0, Math.round((base + amount) * 100) / 100),
+          contrib_period: periodKey,
+        }
+        await store.updateGoal(id, patch)
+        setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)))
+      },
+
+      async updateSettings(patch) {
+        const next = { ...settings, ...patch }
+        setSettings(next)
+        await store.saveSettings(next)
+      },
 
       refresh,
     }),
-    [loading, transactions, budgets, goals, refresh],
+    [loading, transactions, budgets, goals, settings, refresh],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

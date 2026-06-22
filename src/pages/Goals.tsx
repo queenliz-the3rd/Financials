@@ -5,19 +5,21 @@ import ProgressBar from '../components/ProgressBar'
 import EmptyState from '../components/EmptyState'
 import GoalForm from '../components/GoalForm'
 import { useData } from '../context/DataContext'
-import { formatMoney, clamp, currentMonthKey, formatFullDate, countdown } from '../lib/format'
-import { goalPace, contributedThisMonth } from '../lib/planner'
+import { formatMoney, clamp, formatFullDate, countdown } from '../lib/format'
+import { goalPace, contributedThisPeriod } from '../lib/planner'
+import { currentPeriodKey, toPeriodAmount, periodShort } from '../lib/period'
 import { CHART_COLORS } from '../lib/categories'
 import type { Goal } from '../lib/types'
 
 export default function Goals() {
-  const { goals, addGoal, updateGoal, deleteGoal } = useData()
+  const { goals, addGoal, updateGoal, deleteGoal, contributeToGoal, periodCfg } = useData()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)
   const [contributing, setContributing] = useState<Goal | null>(null)
   const [contribution, setContribution] = useState('')
 
-  const month = currentMonthKey()
+  const periodKey = currentPeriodKey(periodCfg)
+  const unit = periodShort(periodCfg)
   const totalSaved = goals.reduce((s, g) => s + g.saved_amount, 0)
   const totalTarget = goals.reduce((s, g) => s + g.target_amount, 0)
 
@@ -26,16 +28,7 @@ export default function Goals() {
     if (!contributing) return
     const amt = parseFloat(contribution)
     if (!Number.isFinite(amt)) return
-
-    const nextSaved = Math.max(0, Math.round((contributing.saved_amount + amt) * 100) / 100)
-    const base = contributing.contrib_month === month ? contributing.contributed_this_month ?? 0 : 0
-    const nextMonthly = Math.max(0, Math.round((base + amt) * 100) / 100)
-
-    await updateGoal(contributing.id, {
-      saved_amount: nextSaved,
-      contributed_this_month: nextMonthly,
-      contrib_month: month,
-    })
+    await contributeToGoal(contributing.id, amt)
     setContribution('')
     setContributing(null)
   }
@@ -79,7 +72,8 @@ export default function Goals() {
             const done = ratio >= 1
             const color = CHART_COLORS[i % CHART_COLORS.length]
             const pace = goalPace(g)
-            const contributed = contributedThisMonth(g, month)
+            const periodTarget = g.monthly_target ? toPeriodAmount(g.monthly_target, periodCfg) : 0
+            const contributed = contributedThisPeriod(g, periodKey)
             return (
               <div key={g.id} className="card group flex flex-col p-5">
                 <div className="mb-3 flex items-center gap-3">
@@ -127,7 +121,8 @@ export default function Goals() {
                     ) : (
                       <>
                         <span className="font-semibold text-ink">
-                          save {formatMoney(pace.requiredMonthly)}/mo
+                          save {formatMoney(toPeriodAmount(pace.requiredMonthly, periodCfg))}/{unit}
+                          {g.auto_contribution && ' (auto)'}
                         </span>
                         {pace.onTrack === true && (
                           <span className="flex items-center gap-0.5 font-semibold text-emerald-600">
@@ -136,7 +131,7 @@ export default function Goals() {
                         )}
                         {pace.onTrack === false && (
                           <span className="flex items-center gap-0.5 font-semibold text-amber-600">
-                            <AlertTriangle size={13} /> behind {formatMoney(pace.shortfall)}/mo
+                            <AlertTriangle size={13} /> behind {formatMoney(toPeriodAmount(pace.shortfall, periodCfg))}/{unit}
                           </span>
                         )}
                       </>
@@ -144,16 +139,16 @@ export default function Goals() {
                   </div>
                 )}
 
-                {/* Monthly contribution progress */}
-                {g.monthly_target && g.monthly_target > 0 && !done && (
+                {/* Period contribution progress */}
+                {periodTarget > 0 && !done && (
                   <div className="mt-3">
                     <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className="text-muted">This month's contribution</span>
+                      <span className="text-muted">This period's contribution</span>
                       <span className="font-semibold">
-                        {formatMoney(contributed)} / {formatMoney(g.monthly_target)}
+                        {formatMoney(contributed)} / {formatMoney(periodTarget)}
                       </span>
                     </div>
-                    <ProgressBar value={contributed / g.monthly_target} color="#bfe9d6" />
+                    <ProgressBar value={contributed / periodTarget} color="#bfe9d6" />
                   </div>
                 )}
 
@@ -180,13 +175,14 @@ export default function Goals() {
       {/* New goal */}
       <Modal open={adding} title="New goal" onClose={() => setAdding(false)}>
         <GoalForm
+          periodCfg={periodCfg}
           onCancel={() => setAdding(false)}
           onSubmit={async (v) => {
             await addGoal({
               ...v,
               saved_amount: 0,
               contributed_this_month: 0,
-              contrib_month: '',
+              contrib_period: '',
             })
             setAdding(false)
           }}
@@ -198,6 +194,7 @@ export default function Goals() {
         {editing && (
           <GoalForm
             initial={editing}
+            periodCfg={periodCfg}
             onCancel={() => setEditing(null)}
             onSubmit={async (v) => {
               await updateGoal(editing.id, v)

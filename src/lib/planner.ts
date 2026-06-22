@@ -1,6 +1,11 @@
 import type { Transaction, Budget, Goal } from './types'
 import { monthsUntil } from './format'
 import { categoryMeta } from './categories'
+import {
+  type PeriodConfig,
+  currentPeriodRange,
+  toPeriodAmount,
+} from './period'
 
 /* ----------------------------- Goal deadlines ----------------------------- */
 
@@ -32,31 +37,36 @@ export function goalPace(goal: Goal, now: Date = new Date()): GoalPace | null {
   return { monthsLeftRaw, requiredMonthly, reached, passed, onTrack, shortfall }
 }
 
-// How much has been contributed to a goal during the current month.
-export function contributedThisMonth(goal: Goal, currentMonth: string): number {
-  return goal.contrib_month === currentMonth ? goal.contributed_this_month ?? 0 : 0
+// How much has been contributed to a goal during the current period.
+export function contributedThisPeriod(goal: Goal, periodKey: string): number {
+  return goal.contrib_period === periodKey ? goal.contributed_this_month ?? 0 : 0
 }
 
 /* ------------------------------ Income stats ------------------------------ */
 
 export interface IncomeStats {
-  thisMonth: number
-  avgMonthly: number // rolling ~3-month average (good for variable income)
+  thisPeriod: number // income logged in the current period
+  avgPerPeriod: number // rolling 3-month average, scaled to the current period
 }
 
-export function incomeStats(transactions: Transaction[], now: Date = new Date()): IncomeStats {
-  const month = now.toISOString().slice(0, 7)
+export function incomeStats(
+  transactions: Transaction[],
+  cfg: PeriodConfig,
+  now: Date = new Date(),
+): IncomeStats {
   const income = transactions.filter((t) => t.type === 'income')
-  const thisMonth = income
-    .filter((t) => t.date.slice(0, 7) === month)
+  const { start, end } = currentPeriodRange(cfg, now)
+  const thisPeriod = income
+    .filter((t) => t.date >= start && t.date < end)
     .reduce((s, t) => s + t.amount, 0)
 
   const since = new Date(now)
   since.setDate(since.getDate() - 90)
   const sinceISO = since.toISOString().slice(0, 10)
   const last90 = income.filter((t) => t.date >= sinceISO).reduce((s, t) => s + t.amount, 0)
+  const avgMonthly = last90 / 3
 
-  return { thisMonth, avgMonthly: last90 / 3 }
+  return { thisPeriod, avgPerPeriod: toPeriodAmount(avgMonthly, cfg) }
 }
 
 /* --------------------------- Income allocation ---------------------------- */
@@ -77,14 +87,19 @@ export interface Allocation {
   leftover: number // positive = free; negative = short
 }
 
-// Personalized: cover budget limits (spending) + goal monthly targets (savings),
-// then show what's free or short. Uses the user's own numbers.
-export function buildAllocation(amount: number, budgets: Budget[], goals: Goal[]): Allocation {
+// Personalized: cover budget limits (spending) + goal targets (savings) for the
+// active period, then show what's free or short. Uses the user's own numbers.
+export function buildAllocation(
+  amount: number,
+  budgets: Budget[],
+  goals: Goal[],
+  cfg: PeriodConfig,
+): Allocation {
   const spendLines: AllocationLine[] = budgets
     .map((b) => ({
       label: b.category,
       emoji: categoryMeta(b.category).emoji,
-      amount: b.limit_amount,
+      amount: toPeriodAmount(b.limit_amount, cfg),
       kind: 'spend' as const,
     }))
     .sort((a, b) => b.amount - a.amount)
@@ -94,7 +109,7 @@ export function buildAllocation(amount: number, budgets: Budget[], goals: Goal[]
     .map((g) => ({
       label: g.name,
       emoji: g.emoji,
-      amount: g.monthly_target as number,
+      amount: toPeriodAmount(g.monthly_target as number, cfg),
       kind: 'save' as const,
     }))
     .sort((a, b) => b.amount - a.amount)

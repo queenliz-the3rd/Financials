@@ -11,16 +11,21 @@ savings goals. Built with React, TypeScript, Vite, Tailwind, and Recharts.
 - **Overview dashboard** — income / spent / net at a glance, a donut chart of
   where your money went, recent activity, and a live budget watch.
 - **Activity** — add, edit, search, and filter income & expenses, grouped by day.
-- **Budgets** — set a gentle monthly limit per category with calm progress bars
-  (and a friendly nudge when you go over).
+- **Budgets** — set a gentle limit per category with calm progress bars (and a
+  friendly nudge when you go over). Budget **monthly or biweekly** (biweekly can
+  be "twice a month" or "every 14 days" from a start date); amounts auto-convert
+  when you switch. **Savings goals appear here as budget lines** and count toward
+  your total, so spending + saving are planned together.
 - **Income planner** — built for irregular income (part-time, tips): plan any
-  amount (a single paycheck or a whole month) against your budgets and goals and
-  see exactly what's covered, what's free, or what's short. Uses your real
-  logged income (this month + a rolling 3-month average).
+  amount (a single paycheck or a whole period) against your budgets and goals and
+  see what's covered, free, or short. Uses your real logged income (this period +
+  a rolling average), plus a **windfall** section to send one-off gifts/side-job
+  money straight to a goal.
 - **Savings goals** — set targets, add money (or withdraw), watch progress fill
-  toward little celebrations 🎉. Each goal can have an **optional deadline**
-  (with the required monthly amount + on/off-track status) and a **monthly
-  contribution goal** tracked month to month.
+  toward little celebrations 🎉. Each goal can have an **optional deadline** (with
+  the required per-period amount + on/off-track status, and **optional
+  auto-calculation** of the contribution needed to finish on time) plus a
+  **per-period contribution goal**.
 - **Weekly insight email** — an optional friendly recap delivered to your inbox
   once a week (spending vs. last week, top category, budget alerts, savings +
   a tip). Preview it live in **Settings**.

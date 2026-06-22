@@ -250,6 +250,9 @@ class CloudStore implements Store {
       timezone: data.timezone ?? DEFAULT_SETTINGS.timezone,
       send_dow: data.send_dow ?? DEFAULT_SETTINGS.send_dow,
       send_hour: data.send_hour ?? DEFAULT_SETTINGS.send_hour,
+      budget_period: data.budget_period ?? DEFAULT_SETTINGS.budget_period,
+      biweekly_style: data.biweekly_style ?? DEFAULT_SETTINGS.biweekly_style,
+      cycle_start: data.cycle_start ?? DEFAULT_SETTINGS.cycle_start,
     }
   }
 
@@ -293,12 +296,13 @@ function seedData(): DataBundle {
     goals: [
       {
         id: uid(), name: 'Emergency fund', target_amount: 5000, saved_amount: 1800, emoji: '🛟',
-        deadline: null, monthly_target: 300, contributed_this_month: 150, contrib_month: today.toISOString().slice(0, 7),
+        deadline: null, monthly_target: 300, auto_contribution: false,
+        contributed_this_month: 150, contrib_period: today.toISOString().slice(0, 7),
       },
       {
         id: uid(), name: 'Japan trip', target_amount: 3000, saved_amount: 950, emoji: '🗾',
         deadline: new Date(today.getFullYear() + 1, today.getMonth(), 1).toISOString().slice(0, 10),
-        monthly_target: 200, contributed_this_month: 0, contrib_month: '',
+        monthly_target: 200, auto_contribution: true, contributed_this_month: 0, contrib_period: '',
       },
     ],
   }
