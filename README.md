@@ -8,8 +8,11 @@ savings goals. Built with React, TypeScript, Vite, Tailwind, and Recharts.
 
 ## ✨ Features
 
-- **Overview dashboard** — income / spent / net at a glance, a donut chart of
-  where your money went, recent activity, and a live budget watch.
+- **Overview dashboard** — a **"fun money"** banner up top (what's free to spend
+  this period = income − budgets − savings − un-budgeted spending) with a quick
+  **Add expense** button that draws it down, plus income / spent / net at a
+  glance, a donut chart of where your money went, recent activity, and a live
+  budget watch.
 - **Activity** — add, edit, search, and filter income & expenses, grouped by day.
 - **Budgets** — set a gentle limit per category with calm progress bars (and a
   friendly nudge when you go over). Budget **monthly or biweekly** (biweekly can

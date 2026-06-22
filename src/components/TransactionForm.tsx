@@ -5,14 +5,15 @@ import type { NewTransaction, TxType, Transaction } from '../lib/types'
 
 interface Props {
   initial?: Transaction
+  defaultCategory?: string
   onSubmit: (t: NewTransaction) => Promise<void> | void
   onCancel: () => void
 }
 
-export default function TransactionForm({ initial, onSubmit, onCancel }: Props) {
+export default function TransactionForm({ initial, defaultCategory, onSubmit, onCancel }: Props) {
   const [type, setType] = useState<TxType>(initial?.type ?? 'expense')
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
-  const [category, setCategory] = useState(initial?.category ?? 'Groceries')
+  const [category, setCategory] = useState(initial?.category ?? defaultCategory ?? 'Groceries')
   const [note, setNote] = useState(initial?.note ?? '')
   const [date, setDate] = useState(initial?.date ?? todayISO())
   const [saving, setSaving] = useState(false)

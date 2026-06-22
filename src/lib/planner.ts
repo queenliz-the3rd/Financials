@@ -69,7 +69,7 @@ export function incomeStats(
   return { thisPeriod, avgPerPeriod: toPeriodAmount(avgMonthly, cfg) }
 }
 
-/* --------------------------- Income allocation ---------------------------- */
+// Personalized: cover budget limits (spending) + goal targets (savings) for the
 
 export interface AllocationLine {
   label: string
@@ -86,6 +86,56 @@ export interface Allocation {
   savings: number
   leftover: number // positive = free; negative = short
 }
+
+/* ------------------------------- Fun money -------------------------------- */
+
+export interface FunMoney {
+  income: number
+  reservedBudgets: number
+  reservedSavings: number
+  unbudgetedSpend: number
+  available: number
+  hasIncome: boolean
+}
+
+// "Free to spend" for the current period:
+//   income this period − reserved budgets − reserved savings − un-budgeted spend
+// Spending in a budgeted category comes out of that budget (not fun money);
+// only spending in categories WITHOUT a budget draws fun money down.
+export function funMoney(
+  transactions: Transaction[],
+  budgets: Budget[],
+  goals: Goal[],
+  cfg: PeriodConfig,
+  now: Date = new Date(),
+): FunMoney {
+  const { start, end } = currentPeriodRange(cfg, now)
+  const inPeriod = (d: string) => d >= start && d < end
+  const budgetedCats = new Set(budgets.map((b) => b.category))
+
+  const income = transactions
+    .filter((t) => t.type === 'income' && inPeriod(t.date))
+    .reduce((s, t) => s + t.amount, 0)
+
+  const reservedBudgets = budgets.reduce((s, b) => s + toPeriodAmount(b.limit_amount, cfg), 0)
+  const reservedSavings = goals
+    .filter((g) => g.monthly_target && g.monthly_target > 0)
+    .reduce((s, g) => s + toPeriodAmount(g.monthly_target as number, cfg), 0)
+  const unbudgetedSpend = transactions
+    .filter((t) => t.type === 'expense' && inPeriod(t.date) && !budgetedCats.has(t.category))
+    .reduce((s, t) => s + t.amount, 0)
+
+  return {
+    income,
+    reservedBudgets,
+    reservedSavings,
+    unbudgetedSpend,
+    available: income - reservedBudgets - reservedSavings - unbudgetedSpend,
+    hasIncome: income > 0,
+  }
+}
+
+/* --------------------------- Income allocation ---------------------------- */
 
 // Personalized: cover budget limits (spending) + goal targets (savings) for the
 // active period, then show what's free or short. Uses the user's own numbers.
