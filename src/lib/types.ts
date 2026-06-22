@@ -24,6 +24,7 @@ export interface Goal {
   saved_amount: number
   emoji: string
   deadline?: string | null // yyyy-mm-dd, or null for no deadline
+  start_date?: string | null // yyyy-mm-dd, when you begin saving (optional)
   monthly_target?: number | null // desired contribution per month (canonical)
   auto_contribution?: boolean // if true, monthly_target is derived from the deadline
   contributed_this_month?: number // amount added during the current period

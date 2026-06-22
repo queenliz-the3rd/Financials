@@ -35,6 +35,7 @@ create table if not exists public.goals (
   saved_amount          numeric(12, 2) not null default 0,
   emoji                 text not null default '🎯',
   deadline              date,                       -- null = no deadline
+  start_date            date,                       -- when saving begins (optional)
   monthly_target        numeric(12, 2),             -- desired contribution per month
   contributed_this_month numeric(12, 2) not null default 0,
   contrib_month         text not null default '',   -- yyyy-mm
@@ -43,6 +44,7 @@ create table if not exists public.goals (
 
 -- If the goals table already exists from an earlier version, add the new columns:
 alter table public.goals add column if not exists deadline date;
+alter table public.goals add column if not exists start_date date;
 alter table public.goals add column if not exists monthly_target numeric(12, 2);
 alter table public.goals add column if not exists contributed_this_month numeric(12, 2) not null default 0;
 alter table public.goals add column if not exists contrib_month text not null default '';

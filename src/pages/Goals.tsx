@@ -109,12 +109,20 @@ export default function Goals() {
 
                 <ProgressBar value={ratio} color={color} />
 
+                {/* Start date (future) */}
+                {g.start_date && pace?.notStarted && (
+                  <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-violet-700">
+                    <CalendarClock size={13} />
+                    starts {formatFullDate(g.start_date)} · {countdown(g.start_date)}
+                  </div>
+                )}
+
                 {/* Deadline pace */}
                 {pace && !done && (
-                  <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                     <span className="flex items-center gap-1 text-muted">
                       <CalendarClock size={13} />
-                      {formatFullDate(g.deadline as string)} · {countdown(g.deadline as string)}
+                      by {formatFullDate(g.deadline as string)} · {countdown(g.deadline as string)}
                     </span>
                     {pace.passed ? (
                       <span className="font-semibold text-rose-500">deadline passed</span>

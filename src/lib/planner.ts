@@ -14,6 +14,7 @@ export interface GoalPace {
   requiredMonthly: number // needed per month to finish on time
   reached: boolean
   passed: boolean
+  notStarted: boolean // saving hasn't begun yet (future start date)
   onTrack: boolean | null // compared to the goal's monthly_target; null if none set
   shortfall: number // requiredMonthly - monthly_target, when behind
 }
@@ -22,9 +23,15 @@ export function goalPace(goal: Goal, now: Date = new Date()): GoalPace | null {
   if (!goal.deadline) return null
   const remaining = Math.max(0, goal.target_amount - goal.saved_amount)
   const reached = remaining <= 0
-  const monthsLeftRaw = monthsUntil(goal.deadline, now)
+
+  // Spread the remaining amount over the window from when saving starts to the
+  // deadline. A future start date means you have until then before contributing.
+  const startDate = goal.start_date ? new Date(goal.start_date + 'T00:00:00') : now
+  const notStarted = startDate.getTime() > now.getTime()
+  const effectiveStart = notStarted ? startDate : now
+
+  const monthsLeftRaw = monthsUntil(goal.deadline, effectiveStart)
   const passed = monthsLeftRaw < 0 && !reached
-  // Avoid divide-by-zero / wild numbers in the final stretch.
   const denom = Math.max(monthsLeftRaw, 0.5)
   const requiredMonthly = reached || passed ? 0 : remaining / denom
 
@@ -34,7 +41,7 @@ export function goalPace(goal: Goal, now: Date = new Date()): GoalPace | null {
     onTrack = goal.monthly_target + 1e-6 >= requiredMonthly
     shortfall = Math.max(0, requiredMonthly - goal.monthly_target)
   }
-  return { monthsLeftRaw, requiredMonthly, reached, passed, onTrack, shortfall }
+  return { monthsLeftRaw, requiredMonthly, reached, passed, notStarted, onTrack, shortfall }
 }
 
 // How much has been contributed to a goal during the current period.

@@ -10,6 +10,7 @@ export interface GoalFormValues {
   target_amount: number
   emoji: string
   deadline: string | null
+  start_date: string | null
   monthly_target: number | null // canonical monthly
   auto_contribution: boolean
 }
@@ -27,6 +28,8 @@ export default function GoalForm({ initial, periodCfg, onSubmit, onCancel }: Pro
   const [target, setTarget] = useState(initial ? String(initial.target_amount) : '')
   const [hasDeadline, setHasDeadline] = useState(!!initial?.deadline)
   const [deadline, setDeadline] = useState(initial?.deadline ?? '')
+  const [hasStart, setHasStart] = useState(!!initial?.start_date)
+  const [startDate, setStartDate] = useState(initial?.start_date ?? '')
   const [auto, setAuto] = useState(initial?.auto_contribution ?? false)
   // The monthly field shows a PERIOD amount to the user; we convert to monthly on save.
   const [periodAmt, setPeriodAmt] = useState(
@@ -37,15 +40,19 @@ export default function GoalForm({ initial, periodCfg, onSubmit, onCancel }: Pro
   const saved = initial?.saved_amount ?? 0
   const unit = periodShort(periodCfg)
 
-  // Auto-calculated required contribution (monthly canonical) from the deadline.
+  // Auto-calculated required contribution (monthly canonical) from the deadline,
+  // spread over the window from when saving starts to the deadline.
   const autoMonthly = useMemo(() => {
     const t = parseFloat(target)
     if (!hasDeadline || !deadline || !Number.isFinite(t)) return null
     const remaining = Math.max(0, t - saved)
-    const months = monthsUntil(deadline)
+    const now = new Date()
+    const startD = hasStart && startDate ? new Date(startDate + 'T00:00:00') : now
+    const effectiveStart = startD.getTime() > now.getTime() ? startD : now
+    const months = monthsUntil(deadline, effectiveStart)
     if (months <= 0) return remaining // due now-ish: needs it all
     return remaining / months
-  }, [target, hasDeadline, deadline, saved])
+  }, [target, hasDeadline, deadline, hasStart, startDate, saved])
 
   const autoPeriod = autoMonthly != null ? toPeriodAmount(autoMonthly, periodCfg) : null
   const canAuto = hasDeadline && !!deadline
@@ -74,6 +81,7 @@ export default function GoalForm({ initial, periodCfg, onSubmit, onCancel }: Pro
         target_amount: Math.round(t * 100) / 100,
         emoji,
         deadline: hasDeadline && deadline ? deadline : null,
+        start_date: hasStart && startDate ? startDate : null,
         monthly_target,
         auto_contribution: useAuto,
       })
@@ -151,6 +159,35 @@ export default function GoalForm({ initial, periodCfg, onSubmit, onCancel }: Pro
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
           />
+        )}
+      </div>
+
+      {/* Start saving date */}
+      <div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-lavender"
+            checked={hasStart}
+            onChange={(e) => {
+              setHasStart(e.target.checked)
+              if (e.target.checked && !startDate) setStartDate(todayISO())
+            }}
+          />
+          Start saving on a date
+        </label>
+        {hasStart && (
+          <>
+            <input
+              type="date"
+              className="input mt-2 animate-fade-in"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-muted">
+              Leave off to start now. A future date spreads contributions from then to the deadline.
+            </p>
+          </>
         )}
       </div>
 
