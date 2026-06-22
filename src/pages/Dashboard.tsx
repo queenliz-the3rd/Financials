@@ -8,7 +8,7 @@ import EmptyState from '../components/EmptyState'
 import TransactionForm from '../components/TransactionForm'
 import FunMoneyCard from '../components/FunMoneyCard'
 import { useData, useMonthStats } from '../context/DataContext'
-import { categoryMeta, EXPENSE_CATEGORIES } from '../lib/categories'
+import { categoryMeta } from '../lib/categories'
 import { funMoney } from '../lib/planner'
 import { formatMoney, monthLabel, currentMonthKey, clamp, prettyDate, todayISO } from '../lib/format'
 import type { Page } from '../components/Nav'
@@ -22,17 +22,12 @@ export default function Dashboard({ go }: { go: (p: Page) => void }) {
   const recent = transactions.slice(0, 5)
 
   const fm = funMoney(transactions, budgets, goals, periodCfg)
-  // A sensible discretionary default for the fun-money quick add: the first
-  // expense category that has no budget (so it actually draws from fun money).
-  const budgetedCats = new Set(budgets.map((b) => b.category))
-  const discretionaryDefault =
-    EXPENSE_CATEGORIES.find((c) => !budgetedCats.has(c.name))?.name ?? 'Fun'
 
   async function quickAddFun(amount: number, note: string) {
     await addTransaction({
       type: 'expense',
       amount,
-      category: discretionaryDefault,
+      category: 'Other',
       note,
       date: todayISO(),
     })
