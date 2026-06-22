@@ -10,14 +10,13 @@ import FunMoneyCard from '../components/FunMoneyCard'
 import { useData, useMonthStats } from '../context/DataContext'
 import { categoryMeta, EXPENSE_CATEGORIES } from '../lib/categories'
 import { funMoney } from '../lib/planner'
-import { formatMoney, monthLabel, currentMonthKey, clamp, prettyDate } from '../lib/format'
+import { formatMoney, monthLabel, currentMonthKey, clamp, prettyDate, todayISO } from '../lib/format'
 import type { Page } from '../components/Nav'
 
 export default function Dashboard({ go }: { go: (p: Page) => void }) {
   const { addTransaction, transactions, budgets, goals, periodCfg } = useData()
   const stats = useMonthStats()
   const [adding, setAdding] = useState(false)
-  const [funDefault, setFunDefault] = useState<string | undefined>(undefined)
 
   const month = currentMonthKey()
   const recent = transactions.slice(0, 5)
@@ -29,13 +28,14 @@ export default function Dashboard({ go }: { go: (p: Page) => void }) {
   const discretionaryDefault =
     EXPENSE_CATEGORIES.find((c) => !budgetedCats.has(c.name))?.name ?? 'Fun'
 
-  function openFunAdd() {
-    setFunDefault(discretionaryDefault)
-    setAdding(true)
-  }
-  function openPlainAdd() {
-    setFunDefault(undefined)
-    setAdding(true)
+  async function quickAddFun(amount: number, note: string) {
+    await addTransaction({
+      type: 'expense',
+      amount,
+      category: discretionaryDefault,
+      note,
+      date: todayISO(),
+    })
   }
 
   // Budget snapshot: top few budgets with spend
@@ -56,14 +56,14 @@ export default function Dashboard({ go }: { go: (p: Page) => void }) {
 
   return (
     <div className="space-y-6">
-      <FunMoneyCard fm={fm} periodCfg={periodCfg} onAddExpense={openFunAdd} />
+      <FunMoneyCard fm={fm} periodCfg={periodCfg} onQuickAdd={quickAddFun} />
 
       <header className="flex items-end justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-muted">{monthLabel(month)}</p>
           <h1 className="text-2xl font-extrabold sm:text-3xl">Hello there 👋</h1>
         </div>
-        <button className="btn-primary" onClick={openPlainAdd}>
+        <button className="btn-primary" onClick={() => setAdding(true)}>
           <Plus size={18} /> Add
         </button>
       </header>
@@ -228,13 +228,8 @@ export default function Dashboard({ go }: { go: (p: Page) => void }) {
         </section>
       )}
 
-      <Modal
-        open={adding}
-        title={funDefault ? 'Spend fun money' : 'Add transaction'}
-        onClose={() => setAdding(false)}
-      >
+      <Modal open={adding} title="Add transaction" onClose={() => setAdding(false)}>
         <TransactionForm
-          defaultCategory={funDefault}
           onCancel={() => setAdding(false)}
           onSubmit={async (t) => {
             await addTransaction(t)

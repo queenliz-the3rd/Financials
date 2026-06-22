@@ -9,15 +9,27 @@ import type { FunMoney } from '../lib/planner'
 interface Props {
   fm: FunMoney
   periodCfg: PeriodConfig
-  onAddExpense: () => void
+  onQuickAdd: (amount: number, note: string) => void | Promise<void>
 }
 
-export default function FunMoneyCard({ fm, periodCfg, onAddExpense }: Props) {
+export default function FunMoneyCard({ fm, periodCfg, onQuickAdd }: Props) {
   const negative = fm.available < 0
   // The starting pool for the period (before discretionary spending).
   const pool = fm.available + fm.unbudgetedSpend
   const fractionLeft = pool > 0 ? clamp(fm.available / pool) : negative ? 0 : 1
   const ringColor = negative ? '#ff9aa8' : '#cdb4f6'
+
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
+
+  async function quickAdd(e: React.FormEvent) {
+    e.preventDefault()
+    const value = parseFloat(amount)
+    if (!Number.isFinite(value) || value <= 0) return
+    await onQuickAdd(Math.round(value * 100) / 100, note.trim())
+    setAmount('')
+    setNote('')
+  }
 
   // Smoothly count the centre amount toward the new value.
   const animated = useAnimatedNumber(fm.available)
@@ -123,17 +135,35 @@ export default function FunMoneyCard({ fm, periodCfg, onAddExpense }: Props) {
               </div>
             )}
 
-            <button onClick={onAddExpense} className="btn-primary mt-3">
-              <Coffee size={16} />
-              <Plus size={14} className="-ml-1" />
-              Add expense
-            </button>
+            <form onSubmit={quickAdd} className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">$</span>
+                <input
+                  className="input w-28 pl-7 font-bold"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </div>
+              <input
+                className="input min-w-[120px] flex-1"
+                placeholder="note (optional)"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+              <button type="submit" className="btn-primary" disabled={!amount}>
+                <Coffee size={16} />
+                <Plus size={14} className="-ml-1" />
+                Add
+              </button>
+            </form>
           </div>
         </div>
 
         <p className="mt-4 flex items-center gap-1.5 text-[11px] text-muted">
           <Info size={12} />
-          Spending in an un-budgeted category comes out of fun money · amounts {periodLong(periodCfg)}.
+          Logs a quick discretionary expense · amounts {periodLong(periodCfg)}.
         </p>
       </div>
     </section>
