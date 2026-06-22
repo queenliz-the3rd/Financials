@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react'
 import { Coffee, Plus, Info } from 'lucide-react'
 import { formatMoney, clamp } from '../lib/format'
+import { useAnimatedNumber } from '../lib/useAnimatedNumber'
 import { periodLabel, periodLong, type PeriodConfig } from '../lib/period'
 import ProgressRing from './ProgressRing'
 import type { FunMoney } from '../lib/planner'
@@ -17,6 +19,25 @@ export default function FunMoneyCard({ fm, periodCfg, onAddExpense }: Props) {
   const fractionLeft = pool > 0 ? clamp(fm.available / pool) : negative ? 0 : 1
   const ringColor = negative ? '#ff9aa8' : '#cdb4f6'
 
+  // Smoothly count the centre amount toward the new value.
+  const animated = useAnimatedNumber(fm.available)
+  const animatedPct = pool > 0 ? Math.round(clamp(animated / pool) * 100) : 0
+
+  // Detect a drop (an expense) to fire the glow + floating "−$" blip.
+  const prevAvail = useRef(fm.available)
+  const [blip, setBlip] = useState<{ key: number; delta: number } | null>(null)
+  useEffect(() => {
+    const prev = prevAvail.current
+    const delta = fm.available - prev
+    prevAvail.current = fm.available
+    if (delta < -0.005) {
+      const key = Date.now()
+      setBlip({ key, delta })
+      const t = setTimeout(() => setBlip((b) => (b?.key === key ? null : b)), 1100)
+      return () => clearTimeout(t)
+    }
+  }, [fm.available])
+
   return (
     <section className="card animate-fade-in overflow-hidden p-0">
       <div
@@ -29,21 +50,40 @@ export default function FunMoneyCard({ fm, periodCfg, onAddExpense }: Props) {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           {/* Ring */}
           <div className="flex items-center gap-4">
-            {fm.hasIncome ? (
-              <ProgressRing value={fractionLeft} color={ringColor}>
-                <span className="text-[11px] font-semibold text-muted">left</span>
-                <span className={`text-lg font-extrabold leading-none ${negative ? 'text-rose-500' : 'text-ink'}`}>
-                  {formatMoney(fm.available, true)}
+            <div className="relative">
+              {fm.hasIncome ? (
+                <ProgressRing value={fractionLeft} color={ringColor}>
+                  <span className="text-[11px] font-semibold text-muted">left</span>
+                  <span className={`text-lg font-extrabold leading-none ${negative ? 'text-rose-500' : 'text-ink'}`}>
+                    {formatMoney(animated, true)}
+                  </span>
+                  {pool > 0 && <span className="mt-0.5 text-[10px] text-muted">{animatedPct}%</span>}
+                </ProgressRing>
+              ) : (
+                <ProgressRing value={0} color="#e3dcef">
+                  <span className="text-2xl">🪙</span>
+                </ProgressRing>
+              )}
+
+              {/* Glow pulse on update */}
+              {blip && (
+                <span
+                  key={`g-${blip.key}`}
+                  className="pointer-events-none absolute inset-0 animate-ring-glow rounded-full border-4"
+                  style={{ borderColor: ringColor }}
+                />
+              )}
+
+              {/* Floating −$ blip */}
+              {blip && (
+                <span
+                  key={`b-${blip.key}`}
+                  className="pointer-events-none absolute left-1/2 top-1 animate-float-up text-sm font-extrabold text-rose-500"
+                >
+                  −{formatMoney(Math.abs(blip.delta), true)}
                 </span>
-                {pool > 0 && (
-                  <span className="mt-0.5 text-[10px] text-muted">{Math.round(fractionLeft * 100)}%</span>
-                )}
-              </ProgressRing>
-            ) : (
-              <ProgressRing value={0} color="#e3dcef">
-                <span className="text-2xl">🪙</span>
-              </ProgressRing>
-            )}
+              )}
+            </div>
 
             <div className="sm:hidden">
               <MetaHeading periodCfg={periodCfg} />
