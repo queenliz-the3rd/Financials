@@ -31,6 +31,13 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+        env:
+          # Set these as repo secrets to make the live site a real cloud app.
+          # The anon key is safe to ship in a client build (row-level security
+          # protects each user's data). With no secrets set, the site stays in
+          # local/demo mode.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/configure-pages@v5
         with:

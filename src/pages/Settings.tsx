@@ -126,19 +126,22 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        {settings.email_enabled && (
-          <div className="mt-5 space-y-4 animate-fade-in">
-            <div>
-              <label className="label">Send to</label>
-              <input
-                type="email"
-                className="input"
-                placeholder="you@example.com"
-                value={settings.email_to}
-                onChange={(e) => patch({ email_to: e.target.value })}
-              />
-            </div>
+        <div className="mt-5">
+          <label className="label">Send to</label>
+          <input
+            type="email"
+            className="input"
+            placeholder="you@example.com"
+            value={settings.email_to}
+            onChange={(e) => patch({ email_to: e.target.value })}
+          />
+          <p className="mt-1 text-xs text-muted">
+            Used for both the weekly email and the test below.
+          </p>
+        </div>
 
+        {settings.email_enabled && (
+          <div className="mt-4 space-y-4 animate-fade-in">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <label className="label">Day</label>
@@ -197,8 +200,13 @@ export default function SettingsPage() {
             {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : null}
             {saved ? 'Saved' : 'Save preferences'}
           </button>
-          {isSupabaseConfigured && settings.email_enabled && (
-            <button className="btn-ghost" onClick={sendTest} disabled={testState === 'sending'}>
+          {isSupabaseConfigured && (
+            <button
+              className="btn-ghost"
+              onClick={sendTest}
+              disabled={testState === 'sending' || !settings.email_to}
+              title={!settings.email_to ? 'Enter an email address first' : undefined}
+            >
               {testState === 'sending' ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
