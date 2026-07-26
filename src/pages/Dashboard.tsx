@@ -14,14 +14,14 @@ import { formatMoney, monthLabel, currentMonthKey, clamp, prettyDate, todayISO }
 import type { Page } from '../components/Nav'
 
 export default function Dashboard({ go }: { go: (p: Page) => void }) {
-  const { addTransaction, transactions, budgets, goals, periodCfg } = useData()
+  const { addTransaction, transactions, budgets, goals, shopping, periodCfg } = useData()
   const stats = useMonthStats()
   const [adding, setAdding] = useState(false)
 
   const month = currentMonthKey()
   const recent = transactions.slice(0, 5)
 
-  const fm = funMoney(transactions, budgets, goals, periodCfg)
+  const fm = funMoney(transactions, budgets, goals, shopping, periodCfg)
 
   async function quickAddFun(amount: number, note: string) {
     await addTransaction({

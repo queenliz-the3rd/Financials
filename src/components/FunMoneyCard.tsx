@@ -132,6 +132,12 @@ export default function FunMoneyCard({ fm, periodCfg, onQuickAdd }: Props) {
                 <span>{formatMoney(fm.reservedBudgets)} budgets</span>
                 <span aria-hidden>−</span>
                 <span>{formatMoney(fm.reservedSavings)} savings</span>
+                {fm.reservedPurchases > 0 && (
+                  <>
+                    <span aria-hidden>−</span>
+                    <span>{formatMoney(fm.reservedPurchases)} to-buy</span>
+                  </>
+                )}
               </div>
             )}
 

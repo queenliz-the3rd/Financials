@@ -18,7 +18,7 @@ import {
 } from '../lib/period'
 
 export default function Budgets() {
-  const { budgets, goals, addBudget, deleteBudget, periodCfg, updateSettings } = useData()
+  const { budgets, goals, shopping, addBudget, deleteBudget, periodCfg, updateSettings } = useData()
   const { transactions } = useData()
   const [adding, setAdding] = useState(false)
   const [category, setCategory] = useState(EXPENSE_CATEGORIES[0].name)
@@ -196,6 +196,8 @@ export default function Budgets() {
         </div>
       )}
 
+      <PlannedPurchases />
+
       <Modal open={adding} title="New budget" onClose={() => setAdding(false)}>
         <form onSubmit={save} className="space-y-4">
           <div>
@@ -245,6 +247,57 @@ export default function Budgets() {
       </Modal>
     </div>
   )
+
+  function PlannedPurchases() {
+    const open = shopping.filter((s) => !s.purchased && (s.price || 0) > 0)
+    if (open.length === 0) return null
+    const total = open.reduce((s, i) => s + i.price, 0)
+    const reserved = open.filter((i) => i.reserve).reduce((s, i) => s + i.price, 0)
+
+    // group by bucket
+    const byBucket = new Map<string, typeof open>()
+    for (const i of open) {
+      const list = byBucket.get(i.bucket) ?? []
+      list.push(i)
+      byBucket.set(i.bucket, list)
+    }
+
+    return (
+      <section className="card p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-bold">Planned purchases</h2>
+          <span className="text-sm text-muted">
+            {formatMoney(total)}
+            {reserved > 0 && <span className="text-emerald-700"> · {formatMoney(reserved)} set aside</span>}
+          </span>
+        </div>
+        <div className="space-y-4">
+          {[...byBucket.entries()].map(([bucket, items]) => (
+            <div key={bucket}>
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted">{bucket}</p>
+              <ul className="space-y-1.5">
+                {items.map((i) => (
+                  <li key={i.id} className="flex items-center gap-2 text-sm">
+                    {i.priority === 'high' && <span title="High priority">🔴</span>}
+                    <span className="font-medium">{i.name}</span>
+                    {i.reserve && (
+                      <span className="rounded-full bg-mint/50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                        set aside
+                      </span>
+                    )}
+                    <span className="ml-auto font-semibold text-muted">{formatMoney(i.price)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-muted">
+          Manage these on the <b>To Buy</b> tab. “Set aside” items already lower your fun money.
+        </p>
+      </section>
+    )
+  }
 
   function PeriodBar() {
     return (

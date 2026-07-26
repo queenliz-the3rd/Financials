@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { store } from '../lib/storage'
-import { currentMonthKey, monthKey } from '../lib/format'
+import { currentMonthKey, monthKey, todayISO } from '../lib/format'
 import { DEFAULT_SETTINGS } from '../lib/types'
 import { type PeriodConfig, currentPeriodKey } from '../lib/period'
 import type {
@@ -19,6 +19,8 @@ import type {
   NewTransaction,
   Transaction,
   Settings,
+  ShoppingItem,
+  NewShoppingItem,
 } from '../lib/types'
 
 interface DataState {
@@ -27,6 +29,7 @@ interface DataState {
   transactions: Transaction[]
   budgets: Budget[]
   goals: Goal[]
+  shopping: ShoppingItem[]
   settings: Settings
   periodCfg: PeriodConfig
 
@@ -43,6 +46,11 @@ interface DataState {
   deleteGoal: (id: string) => Promise<void>
   contributeToGoal: (id: string, amount: number) => Promise<void>
 
+  addShopping: (s: NewShoppingItem) => Promise<void>
+  updateShopping: (id: string, patch: Partial<NewShoppingItem>) => Promise<void>
+  deleteShopping: (id: string) => Promise<void>
+  purchaseShopping: (id: string) => Promise<void>
+
   updateSettings: (patch: Partial<Settings>) => Promise<void>
 
   refresh: () => Promise<void>
@@ -55,6 +63,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
+  const [shopping, setShopping] = useState<ShoppingItem[]>([])
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
 
   const refresh = useCallback(async () => {
@@ -62,6 +71,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTransactions(data.transactions)
     setBudgets(data.budgets)
     setGoals(data.goals)
+    setShopping(data.shopping)
     setSettings(s)
   }, [])
 
@@ -87,6 +97,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       transactions,
       budgets,
       goals,
+      shopping,
       settings,
       periodCfg: {
         period: settings.budget_period,
@@ -156,6 +167,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)))
       },
 
+      async addShopping(s) {
+        const row = await store.addShopping(s)
+        setShopping((prev) => [...prev, row])
+      },
+      async updateShopping(id, patch) {
+        await store.updateShopping(id, patch)
+        setShopping((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+      },
+      async deleteShopping(id) {
+        await store.deleteShopping(id)
+        setShopping((prev) => prev.filter((s) => s.id !== id))
+      },
+      async purchaseShopping(id) {
+        const item = shopping.find((s) => s.id === id)
+        if (!item || item.purchased) return
+        // Mark it bought, and log the spend so it counts against budgets/fun money.
+        const patch = { purchased: true, purchased_at: todayISO() }
+        await store.updateShopping(id, patch)
+        setShopping((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+        if (item.price > 0) {
+          const row = await store.addTransaction({
+            type: 'expense',
+            amount: item.price,
+            category: 'Shopping',
+            note: item.name,
+            date: todayISO(),
+          })
+          setTransactions((prev) =>
+            [row, ...prev].sort((a, b) => b.date.localeCompare(a.date)),
+          )
+        }
+      },
+
       async updateSettings(patch) {
         const next = { ...settings, ...patch }
         setSettings(next)
@@ -164,7 +208,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       refresh,
     }),
-    [loading, transactions, budgets, goals, settings, refresh],
+    [loading, transactions, budgets, goals, shopping, settings, refresh],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

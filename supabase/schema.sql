@@ -51,6 +51,22 @@ alter table public.goals add column if not exists contrib_month text not null de
 alter table public.goals add column if not exists contrib_period text not null default '';
 alter table public.goals add column if not exists auto_contribution boolean not null default false;
 
+-- Shopping list / things to buy ----------------------------------------------
+create table if not exists public.shopping_items (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references auth.users (id) on delete cascade,
+  name          text not null,
+  bucket        text not null default 'Needs',
+  price         numeric(12, 2) not null default 0,
+  priority      text not null default 'normal', -- 'high' | 'normal'
+  deadline      date,
+  notes         text not null default '',
+  reserve       boolean not null default false, -- set money aside from fun money now
+  purchased     boolean not null default false,
+  purchased_at  date,
+  created_at    timestamptz not null default now()
+);
+
 -- Profiles + PIN (one row per user) ------------------------------------------
 -- The 4-digit PIN is stored only as a bcrypt hash and verified server-side by
 -- rate-limited functions. The pin_hash column is NOT readable by clients.
@@ -86,6 +102,7 @@ alter table public.settings add column if not exists cycle_start date;
 create index if not exists transactions_user_date_idx on public.transactions (user_id, date desc);
 create index if not exists budgets_user_idx on public.budgets (user_id);
 create index if not exists goals_user_idx on public.goals (user_id);
+create index if not exists shopping_user_idx on public.shopping_items (user_id);
 
 -- Row Level Security ------------------------------------------------------
 alter table public.transactions enable row level security;
@@ -93,6 +110,7 @@ alter table public.budgets enable row level security;
 alter table public.goals enable row level security;
 alter table public.settings enable row level security;
 alter table public.profiles enable row level security;
+alter table public.shopping_items enable row level security;
 
 -- Helper to keep policies DRY-ish: one policy per table for all actions.
 create policy "own transactions" on public.transactions
@@ -105,6 +123,9 @@ create policy "own goals" on public.goals
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "own settings" on public.settings
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "own shopping" on public.shopping_items
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "own profile" on public.profiles

@@ -9,6 +9,8 @@ import {
   type NewBudget,
   type NewGoal,
   type Settings,
+  type ShoppingItem,
+  type NewShoppingItem,
 } from './types'
 
 // A small storage abstraction. Penny uses Supabase when it's configured,
@@ -19,6 +21,7 @@ export interface DataBundle {
   transactions: Transaction[]
   budgets: Budget[]
   goals: Goal[]
+  shopping: ShoppingItem[]
 }
 
 export interface Store {
@@ -36,6 +39,10 @@ export interface Store {
   addGoal(g: NewGoal): Promise<Goal>
   updateGoal(id: string, patch: Partial<NewGoal>): Promise<void>
   deleteGoal(id: string): Promise<void>
+
+  addShopping(s: NewShoppingItem): Promise<ShoppingItem>
+  updateShopping(id: string, patch: Partial<NewShoppingItem>): Promise<void>
+  deleteShopping(id: string): Promise<void>
 
   loadSettings(): Promise<Settings>
   saveSettings(s: Settings): Promise<void>
@@ -129,6 +136,26 @@ class LocalStore implements Store {
     writeLocal(data)
   }
 
+  async addShopping(s: NewShoppingItem): Promise<ShoppingItem> {
+    const data = readLocal()
+    const row: ShoppingItem = { ...s, id: uid(), created_at: new Date().toISOString() }
+    data.shopping.push(row)
+    writeLocal(data)
+    return row
+  }
+
+  async updateShopping(id: string, patch: Partial<NewShoppingItem>) {
+    const data = readLocal()
+    data.shopping = data.shopping.map((s) => (s.id === id ? { ...s, ...patch } : s))
+    writeLocal(data)
+  }
+
+  async deleteShopping(id: string) {
+    const data = readLocal()
+    data.shopping = data.shopping.filter((s) => s.id !== id)
+    writeLocal(data)
+  }
+
   async loadSettings(): Promise<Settings> {
     try {
       const raw = localStorage.getItem(LS_SETTINGS_KEY)
@@ -157,18 +184,23 @@ class CloudStore implements Store {
   }
 
   async loadAll(): Promise<DataBundle> {
-    const [tx, bg, gl] = await Promise.all([
+    const [tx, bg, gl, sh] = await Promise.all([
       supabase!.from('transactions').select('*').order('date', { ascending: false }),
       supabase!.from('budgets').select('*').order('created_at', { ascending: true }),
       supabase!.from('goals').select('*').order('created_at', { ascending: true }),
+      supabase!.from('shopping_items').select('*').order('created_at', { ascending: true }),
     ])
     if (tx.error) throw tx.error
     if (bg.error) throw bg.error
     if (gl.error) throw gl.error
+    // The shopping_items table may not exist yet on an older project — degrade
+    // gracefully to an empty list instead of breaking the whole app.
+    if (sh.error) console.warn('shopping_items unavailable (run the schema):', sh.error.message)
     return {
       transactions: (tx.data ?? []) as Transaction[],
       budgets: (bg.data ?? []) as Budget[],
       goals: (gl.data ?? []) as Goal[],
+      shopping: (sh.error ? [] : sh.data ?? []) as ShoppingItem[],
     }
   }
 
@@ -232,6 +264,27 @@ class CloudStore implements Store {
 
   async deleteGoal(id: string) {
     const { error } = await supabase!.from('goals').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async addShopping(s: NewShoppingItem): Promise<ShoppingItem> {
+    const user_id = await this.userId()
+    const { data, error } = await supabase!
+      .from('shopping_items')
+      .insert({ ...s, user_id })
+      .select()
+      .single()
+    if (error) throw error
+    return data as ShoppingItem
+  }
+
+  async updateShopping(id: string, patch: Partial<NewShoppingItem>) {
+    const { error } = await supabase!.from('shopping_items').update(patch).eq('id', id)
+    if (error) throw error
+  }
+
+  async deleteShopping(id: string) {
+    const { error } = await supabase!.from('shopping_items').delete().eq('id', id)
     if (error) throw error
   }
 
@@ -303,6 +356,20 @@ function seedData(): DataBundle {
         id: uid(), name: 'Japan trip', target_amount: 3000, saved_amount: 950, emoji: '🗾',
         deadline: new Date(today.getFullYear() + 1, today.getMonth(), 1).toISOString().slice(0, 10),
         monthly_target: 200, auto_contribution: true, contributed_this_month: 0, contrib_period: '',
+      },
+    ],
+    shopping: [
+      {
+        id: uid(), name: 'Winter boots', bucket: 'Needs', price: 90, priority: 'high',
+        deadline: iso(-14), notes: 'waterproof', reserve: true, purchased: false,
+      },
+      {
+        id: uid(), name: 'Desk lamp', bucket: 'Wants', price: 35, priority: 'normal',
+        deadline: null, notes: '', reserve: false, purchased: false,
+      },
+      {
+        id: uid(), name: 'Concert ticket', bucket: 'Someday', price: 60, priority: 'normal',
+        deadline: null, notes: 'if it goes on sale', reserve: false, purchased: false,
       },
     ],
   }

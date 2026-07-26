@@ -37,6 +37,22 @@ export type NewTransaction = Omit<Transaction, 'id' | 'created_at'>
 export type NewBudget = Omit<Budget, 'id' | 'created_at'>
 export type NewGoal = Omit<Goal, 'id' | 'created_at'>
 
+export interface ShoppingItem {
+  id: string
+  name: string
+  bucket: string // custom category, e.g. "Needs", "Wants"
+  price: number // estimated cost (0 if unknown)
+  priority: 'high' | 'normal'
+  deadline?: string | null // buy-by date
+  notes: string
+  reserve: boolean // set the money aside from fun money before buying
+  purchased: boolean
+  purchased_at?: string | null
+  created_at?: string
+}
+
+export type NewShoppingItem = Omit<ShoppingItem, 'id' | 'created_at'>
+
 export interface Settings {
   email_enabled: boolean
   email_to: string

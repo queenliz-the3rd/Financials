@@ -1,4 +1,4 @@
-import type { Transaction, Budget, Goal } from './types'
+import type { Transaction, Budget, Goal, ShoppingItem } from './types'
 import { monthsUntil } from './format'
 import { categoryMeta } from './categories'
 import {
@@ -100,19 +100,22 @@ export interface FunMoney {
   income: number
   reservedBudgets: number
   reservedSavings: number
+  reservedPurchases: number
   unbudgetedSpend: number
   available: number
   hasIncome: boolean
 }
 
 // "Free to spend" for the current period:
-//   income this period − reserved budgets − reserved savings − un-budgeted spend
+//   income − reserved budgets − reserved savings − reserved purchases − un-budgeted spend
 // Spending in a budgeted category comes out of that budget (not fun money);
-// only spending in categories WITHOUT a budget draws fun money down.
+// only spending in categories WITHOUT a budget draws fun money down. Shopping
+// items marked "set aside" reserve their price until bought.
 export function funMoney(
   transactions: Transaction[],
   budgets: Budget[],
   goals: Goal[],
+  shopping: ShoppingItem[],
   cfg: PeriodConfig,
   now: Date = new Date(),
 ): FunMoney {
@@ -128,6 +131,9 @@ export function funMoney(
   const reservedSavings = goals
     .filter((g) => g.monthly_target && g.monthly_target > 0)
     .reduce((s, g) => s + toPeriodAmount(g.monthly_target as number, cfg), 0)
+  const reservedPurchases = shopping
+    .filter((s) => s.reserve && !s.purchased)
+    .reduce((s, i) => s + (i.price || 0), 0)
   const unbudgetedSpend = transactions
     .filter((t) => t.type === 'expense' && inPeriod(t.date) && !budgetedCats.has(t.category))
     .reduce((s, t) => s + t.amount, 0)
@@ -136,8 +142,9 @@ export function funMoney(
     income,
     reservedBudgets,
     reservedSavings,
+    reservedPurchases,
     unbudgetedSpend,
-    available: income - reservedBudgets - reservedSavings - unbudgetedSpend,
+    available: income - reservedBudgets - reservedSavings - reservedPurchases - unbudgetedSpend,
     hasIncome: income > 0,
   }
 }

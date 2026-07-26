@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Budgets from './pages/Budgets'
 import Goals from './pages/Goals'
+import ToBuy from './pages/ToBuy'
 import SettingsPage from './pages/Settings'
 import { DataProvider } from './context/DataContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -70,6 +71,7 @@ function Shell() {
           {page === 'transactions' && <Transactions />}
           {page === 'budgets' && <Budgets />}
           {page === 'goals' && <Goals />}
+          {page === 'tobuy' && <ToBuy />}
           {page === 'settings' && <SettingsPage />}
         </div>
       </main>
