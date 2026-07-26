@@ -31,6 +31,7 @@ export default function ShoppingForm({ initial, existingBuckets, onSubmit, onCan
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [reserve, setReserve] = useState(initial?.reserve ?? false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const buckets = [...new Set([...DEFAULT_BUCKETS, ...existingBuckets])]
 
@@ -39,6 +40,7 @@ export default function ShoppingForm({ initial, existingBuckets, onSubmit, onCan
     if (!name.trim() || !bucket.trim()) return
     const p = parseFloat(price)
     setSaving(true)
+    setError('')
     try {
       await onSubmit({
         name: name.trim(),
@@ -49,6 +51,8 @@ export default function ShoppingForm({ initial, existingBuckets, onSubmit, onCan
         notes: notes.trim(),
         reserve,
       })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -173,6 +177,8 @@ export default function ShoppingForm({ initial, existingBuckets, onSubmit, onCan
           onChange={(e) => setNotes(e.target.value)}
         />
       </div>
+
+      {error && <p className="text-sm font-medium text-rose-500">{error}</p>}
 
       <div className="flex gap-2 pt-1">
         <button type="button" className="btn-ghost flex-1" onClick={onCancel}>
